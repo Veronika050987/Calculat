@@ -266,10 +266,10 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_ASTER, 0);
 			}
 		}
-		else 
+		else
 		{
 			// Shift is not pressed
-			if (wParam >= '0' && wParam <= '9') 
+			if (wParam >= '0' && wParam <= '9')
 			{
 				SendMessage(hwnd, WM_COMMAND, LOWORD(wParam - '0' + IDC_BUTTON_0), 0);
 			}
