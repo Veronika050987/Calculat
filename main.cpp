@@ -2,6 +2,7 @@
 #include<float.h>
 #include<stdio.h>
 #include<iostream>
+#include <wingdi.h>
 #include"resource.h"
 
 #define delimiter "\n-------------------------------------------\n"
@@ -34,6 +35,8 @@ CONST INT g_SIZE = 256;
 INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[]);
 VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[]);
+
+HFONT hCustomFont = NULL;
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
 {
@@ -107,6 +110,24 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		//setlocale(LC_ALL, "");
 		system("CHCP 1251");
 
+		hCustomFont = CreateFont
+		(
+			16,                       // Height
+			0,                         // Width
+			0,                         // Escapement
+			0,                         // Orientation
+			FW_NORMAL,                 // Weight
+			FALSE,                     // Italic
+			FALSE,                     // Underline
+			FALSE,                     // StrikeOut
+			DEFAULT_CHARSET,           // CharSet
+			OUT_DEFAULT_PRECIS,        // OutPrecision
+			CLIP_DEFAULT_PRECIS,       // ClipPrecision
+			DEFAULT_QUALITY,           // Quality
+			DEFAULT_PITCH | FF_SWISS,  // PitchAndFamily
+			"Open 24 Display St" // FaceName
+		);
+
 		HWND hEditDisplay = CreateWindowEx
 		(
 			NULL, "Edit", "0",
@@ -118,6 +139,9 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
+
+		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hCustomFont, TRUE);
+
 		INT iDigit = IDC_BUTTON_1;
 		CHAR szDigit[2] = {};
 		for (int i = 6; i >= 0; i -= 3)
