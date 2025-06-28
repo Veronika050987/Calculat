@@ -451,7 +451,8 @@ VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[])
 }
 VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[])
 {
-	HMODULE hButtonsModule = LoadLibrary("Buttons.dll");
+	HMODULE hButtonsModule = LoadLibrary(sz_skin);
+	//"*.dll"-file should be in the same catalogue with exe. file!!!
 	//	HINSTANCE hButtons = GetModuleHandle("Buttons.dll");
 	for (int i = IDC_BUTTON_0; i <= IDC_BUTTON_EQUAL; i++)
 	{
