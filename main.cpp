@@ -202,7 +202,8 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		//SendMessage(hwnd, WM_SETICON, 0, (LPARAM)hIcon);
 		//SendMessage(GetDlgItem(hwnd, IDC_BUTTON_0), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hIcon);
 //SetSkin(hwnd, "metal_mistral");
-		SetSkinFromDLL(hwnd, "metal_mistral");
+//SetSkin(hwnd, "square_blue");
+SetSkinFromDLL(hwnd, "mine");
 	}
 	break;
 	case WM_COMMAND:
