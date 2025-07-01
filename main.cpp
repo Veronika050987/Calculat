@@ -2,41 +2,12 @@
 #include<float.h>
 #include<stdio.h>
 #include<iostream>
-#include <wingdi.h>
 #include"resource.h"
-
-#define delimiter "\n-------------------------------------------\n"
-CONST CHAR g_sz_CLASS_NAME[] = "MyCalc";
-
-CONST CHAR* g_sz_OPERATIONS[] = { "+", "-", "*", "/" };
-CONST CHAR* g_sz_EDIT[] = { "<-", "C", "=" };
-CONST CHAR* g_sz_BUTTON_FILENAMES[] = { "point", "plus", "minus", "aster", "slash","bsp", "clr", "equal" };
-
-//g_i_ - Global Integer
-CONST INT g_i_BUTTON_SIZE = 50;
-CONST INT g_i_INTERVAL = 1;
-CONST INT g_i_BUTTON_SPACE = g_i_BUTTON_SIZE + g_i_INTERVAL;
-//CONST INT g_i_BUTTON_SPACE_DOUBLE = (g_i_BUTTON_SIZE + g_i_INTERVAL) * 2;
-
-CONST INT g_i_BUTTON_SIZE_DOUBLE = g_i_BUTTON_SIZE * 2 + g_i_INTERVAL;
-CONST INT g_i_START_X = 10;
-CONST INT g_i_START_Y = 10;
-CONST INT g_i_DISPLAY_HEIGHT = 22;
-CONST INT g_i_DISPLAY_WIDTH = g_i_BUTTON_SIZE * 5 + g_i_INTERVAL * 4;
-CONST INT g_i_BUTTON_START_X = g_i_START_X;
-CONST INT g_i_BUTTON_START_Y = g_i_START_Y + g_i_DISPLAY_HEIGHT + g_i_INTERVAL;
-
-CONST INT g_i_WINDOW_WIDTH = g_i_DISPLAY_WIDTH + 2 * g_i_START_X + 16;
-CONST INT g_i_WINDOW_HEIGHT = (g_i_DISPLAY_HEIGHT + g_i_INTERVAL) + g_i_BUTTON_SPACE *
-4 + 2 * g_i_START_Y + 24 + 16;
-
-CONST INT g_SIZE = 256;
+#include"Constants.h"
 
 INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[]);
 VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[]);
-
-HFONT hCustomFont = NULL;
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
 {
@@ -101,37 +72,19 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	static BOOL input = FALSE;				//Пользователь ввел число
 	static BOOL input_operation = FALSE;	//Пользователь ввел знак операции
 
+	static INT index = 0;
+
 	switch (uMsg)
 	{
 	case WM_CREATE:
 	{
 		AllocConsole();
 		freopen("CONOUT$", "w", stdout);
-		//setlocale(LC_ALL, "");
 		system("CHCP 1251");
-
-		hCustomFont = CreateFont
-		(
-			16,                       // Height
-			0,                         // Width
-			0,                         // Escapement
-			0,                         // Orientation
-			FW_NORMAL,                 // Weight
-			FALSE,                     // Italic
-			FALSE,                     // Underline
-			FALSE,                     // StrikeOut
-			DEFAULT_CHARSET,           // CharSet
-			OUT_DEFAULT_PRECIS,        // OutPrecision
-			CLIP_DEFAULT_PRECIS,       // ClipPrecision
-			DEFAULT_QUALITY,           // Quality
-			DEFAULT_PITCH | FF_SWISS,  // PitchAndFamily
-			"Open 24 Display St" // FaceName
-		);
-
 		HWND hEditDisplay = CreateWindowEx
 		(
 			NULL, "Edit", "0",
-			WS_CHILD | WS_VISIBLE | WS_BORDER | ES_RIGHT,
+			WS_CHILD | WS_VISIBLE | WS_BORDER | ES_RIGHT | ES_NOHIDESEL,
 			g_i_BUTTON_START_X, g_i_START_Y,
 			g_i_DISPLAY_WIDTH, g_i_DISPLAY_HEIGHT,
 			hwnd,
@@ -139,8 +92,22 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
-
-		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hCustomFont, TRUE);
+		AddFontResourceEx("Fonts\\ASTRONAU.ttf", FR_PRIVATE, 0);
+		HFONT hFont = CreateFont
+		(
+			g_i_DISPLAY_HEIGHT - 2, g_i_DISPLAY_HEIGHT / 3,
+			0,
+			0,
+			FW_BOLD,
+			FALSE, FALSE, FALSE,
+			DEFAULT_CHARSET,
+			OUT_TT_PRECIS,
+			CLIP_DEFAULT_PRECIS,
+			ANTIALIASED_QUALITY,
+			FF_DONTCARE,
+			"Astronaut"
+		);
+		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFont, TRUE);
 
 		INT iDigit = IDC_BUTTON_1;
 		CHAR szDigit[2] = {};
@@ -218,17 +185,33 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			);
 		}
 		//HICON hIcon = LoadIcon(GetModuleHandle(NULL), "ICO\\palm.ico");
-		HICON hIcon = (HICON)LoadImage(GetModuleHandle(NULL), "BMP\\0.bmp", IMAGE_BITMAP, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_LOADFROMFILE);
+		HICON hIcon = (HICON)LoadImage(GetModuleHandle(NULL), "BMP\\0.bmp", IMAGE_BITMAP, LR_DEFAULTSIZE, LR_DEFAULTSIZE, 
+			LR_LOADFROMFILE);
 		//GetLastError();
 		//CHAR sz_error[32] = "";
 		//sprintf(sz_error, "%i", GetLastError());
 		//MessageBox(hwnd, sz_error, "", MB_OK);
 		//SendMessage(hwnd, WM_SETICON, 0, (LPARAM)hIcon);
 		//SendMessage(GetDlgItem(hwnd, IDC_BUTTON_0), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hIcon);
-		//SetSkin(hwnd, "metal_mistral");
-		//SetSkin(hwnd, "metal_mistral");
-		SetSkinFromDLL(hwnd, "mine");
 
+		//SetSkin(hwnd, "metal_mistral");
+		SetSkinFromDLL(hwnd, "square_blue");
+
+
+	}
+	break;
+
+	case WM_CTLCOLOREDIT:
+	{
+		HDC hdcEdit = (HDC)wParam;	//HDC - Handler to Device Context
+		SetBkColor(hdcEdit, g_DISPLAY_BACKGROUND[index]);
+		SetTextColor(hdcEdit, g_DISPLAY_FOREGROUND[index]);
+
+		HBRUSH hbrBackground = CreateSolidBrush(g_WINDOW_BACKGROUND[index]);
+		SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG)hbrBackground);
+		SendMessage(hwnd, WM_ERASEBKGND, wParam, 0);
+		RedrawWindow(hwnd, NULL, NULL, RDW_ERASE);
+		return (LRESULT)hbrBackground;
 	}
 	break;
 	case WM_COMMAND:
@@ -299,7 +282,8 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			sprintf(szDisplay, "%g", a);
 			SendMessage(hEditDisplay, WM_SETTEXT, 0, (LPARAM)szDisplay);
 		}
-
+		//if (LOWORD(wParam) == IDC_EDIT_DISPLAY && HIWORD(wParam) == EN_SETFOCUS)
+		SetFocus(hwnd);
 	}
 	break;
 
@@ -321,6 +305,7 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			SendMessage(GetDlgItem(hwnd, LOWORD(wParam) - 0x60 + IDC_BUTTON_0), BM_SETSTATE, TRUE, 0);
 		}
+
 
 		switch (wParam)
 		{
@@ -359,6 +344,7 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SendMessage(GetDlgItem(hwnd, LOWORD(wParam) - 0x60 + IDC_BUTTON_0), BM_SETSTATE, FALSE, 0);
 			SendMessage(hwnd, WM_COMMAND, LOWORD(wParam) - 0x60 + IDC_BUTTON_0, 0);
 		}
+
 
 		switch (wParam)
 		{
@@ -402,6 +388,46 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	break;
 
+	case WM_CONTEXTMENU:
+	{
+		HMENU hMainMenu = CreatePopupMenu();
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT, "Exit");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square Blue");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_METAL_MISTRAL, "Metal Mistral");
+
+		BOOL item = TrackPopupMenuEx(hMainMenu, TPM_RETURNCMD | TPM_RIGHTALIGN | TPM_BOTTOMALIGN, LOWORD(lParam), 
+			HIWORD(lParam), hwnd, NULL);
+
+		switch (item)
+		{
+		case CM_EXIT:			SendMessage(hwnd, WM_DESTROY, 0, 0);	break;
+		case CM_SQUARE_BLUE:	SetSkinFromDLL(hwnd, "square_blue");	break;
+		case CM_METAL_MISTRAL:	SetSkinFromDLL(hwnd, "metal_mistral");	break;
+		}
+		DestroyMenu(hMainMenu);
+
+		if (item >= 201 && item <= 210)
+		{
+			index = item - CM_SQUARE_BLUE;
+			//SetSkin(hwnd, g_sz_SKIN[index]);
+
+			HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
+			HDC hdcEditDisplay = GetDC(hEditDisplay);
+			SendMessage(hwnd, WM_CTLCOLOREDIT, (WPARAM)hdcEditDisplay, 0);
+			ReleaseDC(hEditDisplay, hdcEditDisplay);	//Контекст устройства обяхательно нужно освобождать
+
+			CHAR sz_buffer[g_SIZE] = {};
+			SendMessage(hwnd, WM_GETTEXT, g_SIZE, (LPARAM)sz_buffer);
+			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)"");
+			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)sz_buffer);
+			SetFocus(hEditDisplay);
+			SetSkinFromDLL(hwnd, g_sz_SKIN[index]);
+		}
+
+	}
+	break;
+
 	case WM_DESTROY:
 		FreeConsole();
 		PostQuitMessage(0);
@@ -437,8 +463,6 @@ VOID PrintLastError(DWORD dwErrorID)
 }
 VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[])
 {
-	HBITMAP hButtonBitmaps[18] = { NULL };
-
 	std::cout << "SetSkin()" << std::endl;
 	CHAR sz_filename[FILENAME_MAX] = {};
 	for (int i = 0; i <= 9; i++)
@@ -456,7 +480,6 @@ VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[])
 		PrintLastError(GetLastError());
 		//MessageBox(hwnd, lpszMessage, "", MB_OK);
 		SendMessage(GetDlgItem(hwnd, IDC_BUTTON_0 + i), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmpIcon);
-		hButtonBitmaps[i] = bmpIcon;
 	}
 	for (int i = IDC_BUTTON_POINT; i <= IDC_BUTTON_EQUAL; i++)
 	{
@@ -469,7 +492,6 @@ VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[])
 			g_i_BUTTON_SIZE,
 			i == IDC_BUTTON_EQUAL ? g_i_BUTTON_SIZE_DOUBLE : g_i_BUTTON_SIZE,
 			LR_LOADFROMFILE
-
 		);
 		SendMessage(GetDlgItem(hwnd, i), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmpIcon);
 	}
@@ -478,8 +500,8 @@ VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[])
 VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[])
 {
 	HMODULE hButtonsModule = LoadLibrary(sz_skin);
-	//"*.dll"-file should be in the same catalogue with exe. file!!!
-	//	HINSTANCE hButtons = GetModuleHandle("Buttons.dll");
+	//Принципиально важно чтобы "*.dll"-файл находился в одном каталоге с нашим "*.exe"-файлом!!!
+	//HINSTANCE hButtons = GetModuleHandle("Buttons.dll");
 	for (int i = IDC_BUTTON_0; i <= IDC_BUTTON_EQUAL; i++)
 	{
 		HBITMAP bmpButton = (HBITMAP)LoadImage
