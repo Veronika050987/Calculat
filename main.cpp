@@ -93,7 +93,7 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			NULL
 		);
 		AddFontResourceEx("Fonts\\ASTRONAU.ttf", FR_PRIVATE, 0);
-		HFONT hFont = CreateFont
+		HFONT hFontAstranaut = CreateFont
 		(
 			g_i_DISPLAY_HEIGHT - 2, g_i_DISPLAY_HEIGHT / 3,
 			0,
@@ -107,7 +107,24 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			FF_DONTCARE,
 			"Astronaut"
 		);
-		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFont, TRUE);
+		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFontAstranaut, TRUE);
+
+		AddFontResourceEx("Fonts\\SUNSET.ttf", FR_PRIVATE, 0);
+		HFONT hFontSunset_Holiday = CreateFont
+		(
+			g_i_DISPLAY_HEIGHT - 2, g_i_DISPLAY_HEIGHT / 3,
+			0,
+			0,
+			FW_BOLD,
+			FALSE, FALSE, FALSE,
+			DEFAULT_CHARSET,
+			OUT_TT_PRECIS,
+			CLIP_DEFAULT_PRECIS,
+			ANTIALIASED_QUALITY,
+			FF_DONTCARE,
+			"Sunset Holiday"
+		);
+		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFontSunset_Holiday, TRUE);
 
 		INT iDigit = IDC_BUTTON_1;
 		CHAR szDigit[2] = {};
@@ -197,7 +214,6 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		//SetSkin(hwnd, "metal_mistral");
 		SetSkinFromDLL(hwnd, "square_blue");
 
-
 	}
 	break;
 
@@ -281,6 +297,15 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			input_operation = FALSE;
 			sprintf(szDisplay, "%g", a);
 			SendMessage(hEditDisplay, WM_SETTEXT, 0, (LPARAM)szDisplay);
+		}
+		if (LOWORD(wParam) == CM_FONT_ASTRONAU) 
+		{
+			SetSkinFromDLL(hwnd, "ASTRONAU.dll");
+		}
+
+		if (LOWORD(wParam) == CM_FONT_SUNSET)
+		{
+			SetSkinFromDLL(hwnd, "SUNSET.dll");
 		}
 		//if (LOWORD(wParam) == IDC_EDIT_DISPLAY && HIWORD(wParam) == EN_SETFOCUS)
 		SetFocus(hwnd);
@@ -391,10 +416,16 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CONTEXTMENU:
 	{
 		HMENU hMainMenu = CreatePopupMenu();
-		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT, "Exit");
+		HMENU hFontMenu = CreatePopupMenu();
+
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)hFontMenu, "Fonts");
+		InsertMenu(hFontMenu, 0, MF_BYPOSITION | MF_STRING, CM_FONT_ASTRONAU, "Astronaut"); // Font choices in the submenu
+		InsertMenu(hFontMenu, 1, MF_BYPOSITION | MF_STRING, CM_FONT_SUNSET, "Sunset Holiday");
+
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT,			"Exit");
 		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square Blue");
-		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_METAL_MISTRAL, "Metal Mistral");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE,		"Square Blue");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_METAL_MISTRAL,	"Metal Mistral");		
 
 		BOOL item = TrackPopupMenuEx(hMainMenu, TPM_RETURNCMD | TPM_RIGHTALIGN | TPM_BOTTOMALIGN, LOWORD(lParam), 
 			HIWORD(lParam), hwnd, NULL);
@@ -405,11 +436,23 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case CM_SQUARE_BLUE:	SetSkinFromDLL(hwnd, "square_blue");	break;
 		case CM_METAL_MISTRAL:	SetSkinFromDLL(hwnd, "metal_mistral");	break;
 		}
-		DestroyMenu(hMainMenu);
 
-		if (item >= 201 && item <= 210)
+		BOOL FontItem = TrackPopupMenuEx(hFontMenu, TPM_RETURNCMD | TPM_RIGHTALIGN | TPM_BOTTOMALIGN, LOWORD(lParam),
+			HIWORD(lParam), hwnd, NULL);
+
+		switch (FontItem)
+		{
+		case CM_FONT_ASTRONAU:	SetSkinFromDLL(hwnd, "Astronaut");		break;
+		case CM_FONT_SUNSET:	SetSkinFromDLL(hwnd, "Sunset Holiday"); break;
+		}
+
+		DestroyMenu(hFontMenu);
+		DestroyMenu(hMainMenu);
+		
+		if (item >= 201 && item <= 210 && FontItem >= 203)
 		{
 			index = item - CM_SQUARE_BLUE;
+			FontItem = FontItem - CM_FONT_ASTRONAU;
 			//SetSkin(hwnd, g_sz_SKIN[index]);
 
 			HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
@@ -502,6 +545,34 @@ VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[])
 	HMODULE hButtonsModule = LoadLibrary(sz_skin);
 	//Принципиально важно чтобы "*.dll"-файл находился в одном каталоге с нашим "*.exe"-файлом!!!
 	//HINSTANCE hButtons = GetModuleHandle("Buttons.dll");
+	HFONT hFontAstranaut = NULL;
+	HFONT hFontSunset_Holiday = NULL;
+
+	hFontAstranaut = (HFONT)LoadImageA
+	(
+		hButtonsModule,
+		MAKEINTRESOURCE(CM_FONT_ASTRONAU), 
+		CM_FONT_ASTRONAU,          
+		0, 0,
+		LR_SHARED
+	);
+
+	hFontSunset_Holiday = (HFONT)LoadImageA
+	(
+		hButtonsModule,
+		MAKEINTRESOURCE(CM_FONT_SUNSET),
+		CM_FONT_SUNSET,           
+		0, 0,
+		LR_SHARED
+	);
+
+	if (hFontAstranaut)
+	{
+		HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
+
+		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFontAstranaut, TRUE);
+	}
+
 	for (int i = IDC_BUTTON_0; i <= IDC_BUTTON_EQUAL; i++)
 	{
 		HBITMAP bmpButton = (HBITMAP)LoadImage
