@@ -32,3 +32,5 @@ CONST COLORREF g_DISPLAY_BACKGROUND[] = { RGB(0,0, 100), RGB(100,100,100) };
 CONST COLORREF g_DISPLAY_FOREGROUND[] = { RGB(255,0,000), RGB(0,255,0) };
 
 CONST CHAR* g_sz_SKIN[] = { "square_blue", "metal_mistral" };
+
+CONST CHAR* g_sz_FONT[] = { "digital-7 (mono)", "TristanDEMO-Regular", "ASTRONAU" };

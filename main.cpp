@@ -8,6 +8,9 @@
 INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[]);
 VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[]);
+VOID LoadFontFromDLL(HMODULE hFontModule, INT resourceID);
+VOID LoadFontsFromDLL(HMODULE hFontModule);
+VOID SetFont(HWND hwnd, CONST CHAR font_name[]);
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
 {
@@ -73,6 +76,7 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	static BOOL input_operation = FALSE;	//Пользователь ввел знак операции
 
 	static INT index = 0;
+	static INT font_index = 0;
 
 	switch (uMsg)
 	{
@@ -92,25 +96,9 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
-		AddFontResourceEx("Fonts\\ASTRONAU.ttf", FR_PRIVATE, 0);
-		HFONT hFontAstranaut = CreateFont
-		(
-			g_i_DISPLAY_HEIGHT - 2, g_i_DISPLAY_HEIGHT / 3,
-			0,
-			0,
-			FW_BOLD,
-			FALSE, FALSE, FALSE,
-			DEFAULT_CHARSET,
-			OUT_TT_PRECIS,
-			CLIP_DEFAULT_PRECIS,
-			ANTIALIASED_QUALITY,
-			FF_DONTCARE,
-			"Astronaut"
-		);
-		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFontAstranaut, TRUE);
 
-		AddFontResourceEx("Fonts\\SUNSET.ttf", FR_PRIVATE, 0);
-		HFONT hFontSunset_Holiday = CreateFont
+		/*AddFontResourceEx("Fonts\\digital-7 (mono).ttf", FR_PRIVATE, 0);
+		HFONT hFont = CreateFont
 		(
 			g_i_DISPLAY_HEIGHT - 2, g_i_DISPLAY_HEIGHT / 3,
 			0,
@@ -122,9 +110,9 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			CLIP_DEFAULT_PRECIS,
 			ANTIALIASED_QUALITY,
 			FF_DONTCARE,
-			"Sunset Holiday"
-		);
-		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFontSunset_Holiday, TRUE);
+			"digital-7 mono"
+		);*/
+		//SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFont, TRUE);
 
 		INT iDigit = IDC_BUTTON_1;
 		CHAR szDigit[2] = {};
@@ -213,7 +201,9 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		//SetSkin(hwnd, "metal_mistral");
 		SetSkinFromDLL(hwnd, "square_blue");
-
+		HMODULE hFonts = LoadLibrary("Fonts.DLL");
+		LoadFontsFromDLL(hFonts);
+		SetFont(hwnd, g_sz_FONT[font_index]);
 	}
 	break;
 
@@ -298,17 +288,11 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			sprintf(szDisplay, "%g", a);
 			SendMessage(hEditDisplay, WM_SETTEXT, 0, (LPARAM)szDisplay);
 		}
-		if (LOWORD(wParam) == CM_FONT_ASTRONAU) 
-		{
-			SetSkinFromDLL(hwnd, "ASTRONAU.dll");
-		}
 
-		if (LOWORD(wParam) == CM_FONT_SUNSET)
-		{
-			SetSkinFromDLL(hwnd, "SUNSET.dll");
-		}
 		//if (LOWORD(wParam) == IDC_EDIT_DISPLAY && HIWORD(wParam) == EN_SETFOCUS)
 		SetFocus(hwnd);
+
+
 	}
 	break;
 
@@ -419,8 +403,9 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		HMENU hFontMenu = CreatePopupMenu();
 
 		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)hFontMenu, "Fonts");
-		InsertMenu(hFontMenu, 0, MF_BYPOSITION | MF_STRING, CM_FONT_ASTRONAU, "Astronaut"); // Font choices in the submenu
-		InsertMenu(hFontMenu, 1, MF_BYPOSITION | MF_STRING, CM_FONT_SUNSET, "Sunset Holiday");
+		InsertMenu(hFontMenu, 0, MF_BYPOSITION | MF_STRING, IDF_FONT_1, "Digital-7 Mono"); // Font choices in the submenu
+		InsertMenu(hFontMenu, 1, MF_BYPOSITION | MF_STRING, IDF_FONT_2, "Tristan DEMO");
+		InsertMenu(hFontMenu, 1, MF_BYPOSITION | MF_STRING, IDF_FONT_3, "Astronaut");
 
 		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT,			"Exit");
 		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
@@ -442,17 +427,17 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		switch (FontItem)
 		{
-		case CM_FONT_ASTRONAU:	SetSkinFromDLL(hwnd, "Astronaut");		break;
-		case CM_FONT_SUNSET:	SetSkinFromDLL(hwnd, "Sunset Holiday"); break;
+		case IDF_FONT_1:	SetFont(hwnd, "Digital-7 Mono");	break;
+		case IDF_FONT_2:	SetFont(hwnd, "Tristan DEMO");		break;
+		case IDF_FONT_3:	SetFont(hwnd, "SAstronaut");		break;
 		}
 
 		DestroyMenu(hFontMenu);
 		DestroyMenu(hMainMenu);
 		
-		if (item >= 201 && item <= 210 && FontItem >= 203)
+		if (item >= 201 && item <= 210)
 		{
 			index = item - CM_SQUARE_BLUE;
-			FontItem = FontItem - CM_FONT_ASTRONAU;
 			//SetSkin(hwnd, g_sz_SKIN[index]);
 
 			HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
@@ -466,6 +451,24 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)sz_buffer);
 			SetFocus(hEditDisplay);
 			SetSkinFromDLL(hwnd, g_sz_SKIN[index]);
+		}
+
+		if (FontItem >= 301 && FontItem <= 305)
+		{
+			font_index = item - IDF_FONT_1;
+			//SetSkin(hwnd, g_sz_SKIN[index]);
+
+			HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
+			HDC hdcEditDisplay = GetDC(hEditDisplay);
+			SendMessage(hwnd, WM_CTLCOLOREDIT, (WPARAM)hdcEditDisplay, 0);
+			//ReleaseDC(hEditDisplay, hdcEditDisplay);	//Контекст устройства обяхательно нужно освобождать
+
+			CHAR sz_buffer[g_SIZE] = {};
+			SendMessage(hwnd, WM_GETTEXT, g_SIZE, (LPARAM)sz_buffer);
+			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)"");
+			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)sz_buffer);
+			SetFocus(hEditDisplay);
+			SetFont(hwnd, g_sz_FONT[index]);
 		}
 
 	}
@@ -545,33 +548,6 @@ VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[])
 	HMODULE hButtonsModule = LoadLibrary(sz_skin);
 	//Принципиально важно чтобы "*.dll"-файл находился в одном каталоге с нашим "*.exe"-файлом!!!
 	//HINSTANCE hButtons = GetModuleHandle("Buttons.dll");
-	HFONT hFontAstranaut = NULL;
-	HFONT hFontSunset_Holiday = NULL;
-
-	hFontAstranaut = (HFONT)LoadImageA
-	(
-		hButtonsModule,
-		MAKEINTRESOURCE(CM_FONT_ASTRONAU), 
-		CM_FONT_ASTRONAU,          
-		0, 0,
-		LR_SHARED
-	);
-
-	hFontSunset_Holiday = (HFONT)LoadImageA
-	(
-		hButtonsModule,
-		MAKEINTRESOURCE(CM_FONT_SUNSET),
-		CM_FONT_SUNSET,           
-		0, 0,
-		LR_SHARED
-	);
-
-	if (hFontAstranaut)
-	{
-		HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
-
-		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFontAstranaut, TRUE);
-	}
 
 	for (int i = IDC_BUTTON_0; i <= IDC_BUTTON_EQUAL; i++)
 	{
@@ -588,4 +564,43 @@ VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[])
 		SendMessage(GetDlgItem(hwnd, i), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmpButton);
 	}
 	FreeLibrary(hButtonsModule);
+}
+
+VOID LoadFontFromDLL(HMODULE hFontModule, INT resourceID)
+{	
+	HRSRC hFntRes = FindResource(hFontModule, MAKEINTRESOURCE(resourceID), MAKEINTRESOURCE(RT_FONT));
+	HGLOBAL hFntMem = LoadResource(hFontModule, hFntRes);
+	VOID* fntData = LockResource(hFntMem);
+	DWORD nFonts = 0;
+	DWORD len = SizeofResource(hFontModule, hFntRes);
+	AddFontMemResourceEx(fntData, len, NULL, &nFonts);
+}
+
+VOID LoadFontsFromDLL(HMODULE hFontModule)
+{
+	for (int i = 301; i <= 304; i++)
+	{
+		LoadFontFromDLL(hFontModule, i);
+	}
+}
+
+VOID SetFont(HWND hwnd, CONST CHAR font_name[])
+{
+	HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
+	//AddFontResourceEx("Fonts\\digital-7 (mono).ttf", FR_PRIVATE, 0);
+		HFONT hFont = CreateFont
+		(
+			g_i_DISPLAY_HEIGHT - 2, g_i_DISPLAY_HEIGHT / 3,
+			0,
+			0,
+			FW_BOLD,
+			FALSE, FALSE, FALSE,
+			DEFAULT_CHARSET,
+			OUT_TT_PRECIS,
+			CLIP_DEFAULT_PRECIS,
+			ANTIALIASED_QUALITY,
+			FF_DONTCARE,
+			font_name
+		);
+		SendMessage(hEditDisplay, WM_SETFONT, (WPARAM)hFont, TRUE);
 }
