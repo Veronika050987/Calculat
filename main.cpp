@@ -1,4 +1,4 @@
-﻿#define DEBUG
+﻿//#define DEBUG
 #include<Windows.h>
 #include<float.h>
 #include<stdio.h>
@@ -201,7 +201,7 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		//SetSkin(hwnd, "metal_mistral");
 		SetSkinFromDLL(hwnd, "square_blue");
-		HMODULE hFonts = LoadLibrary("Fonts.DLL");
+		HMODULE hFonts = LoadLibrary("Fonts_only_DLL.DLL");
 		PrintLastError(GetLastError());
 		LoadFontsFromDLL(hFonts);
 		SetFont(hwnd, g_sz_FONT[font_index]);
