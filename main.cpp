@@ -1,9 +1,11 @@
-﻿#include<Windows.h>
+﻿#define DEBUG
+#include<Windows.h>
 #include<float.h>
 #include<stdio.h>
 #include<iostream>
 #include"resource.h"
 #include"Constants.h"
+#include"..\\LastError\\LastError.h"
 
 INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 VOID SetSkin(HWND hwnd, CONST CHAR sz_skin[]);
@@ -11,6 +13,7 @@ VOID SetSkinFromDLL(HWND hwnd, CONST CHAR sz_skin[]);
 VOID LoadFontFromDLL(HMODULE hFontModule, INT resourceID);
 VOID LoadFontsFromDLL(HMODULE hFontModule);
 VOID SetFont(HWND hwnd, CONST CHAR font_name[]);
+
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT nCmdShow)
 {
@@ -77,14 +80,17 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	static INT index = 0;
 	static INT font_index = 0;
+	static BOOL window_color_changed = TRUE;
 
 	switch (uMsg)
 	{
 	case WM_CREATE:
 	{
+#ifdef DEBUG
 		AllocConsole();
 		freopen("CONOUT$", "w", stdout);
 		system("CHCP 1251");
+#endif // DEBUG
 		HWND hEditDisplay = CreateWindowEx
 		(
 			NULL, "Edit", "0",
@@ -192,16 +198,11 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		//HICON hIcon = LoadIcon(GetModuleHandle(NULL), "ICO\\palm.ico");
 		HICON hIcon = (HICON)LoadImage(GetModuleHandle(NULL), "BMP\\0.bmp", IMAGE_BITMAP, LR_DEFAULTSIZE, LR_DEFAULTSIZE, 
 			LR_LOADFROMFILE);
-		//GetLastError();
-		//CHAR sz_error[32] = "";
-		//sprintf(sz_error, "%i", GetLastError());
-		//MessageBox(hwnd, sz_error, "", MB_OK);
-		//SendMessage(hwnd, WM_SETICON, 0, (LPARAM)hIcon);
-		//SendMessage(GetDlgItem(hwnd, IDC_BUTTON_0), BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hIcon);
 
 		//SetSkin(hwnd, "metal_mistral");
 		SetSkinFromDLL(hwnd, "square_blue");
 		HMODULE hFonts = LoadLibrary("Fonts.DLL");
+		PrintLastError(GetLastError());
 		LoadFontsFromDLL(hFonts);
 		SetFont(hwnd, g_sz_FONT[font_index]);
 	}
@@ -210,14 +211,19 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CTLCOLOREDIT:
 	{
 		HDC hdcEdit = (HDC)wParam;	//HDC - Handler to Device Context
+		SetBkMode(hdcEdit, OPAQUE);
 		SetBkColor(hdcEdit, g_DISPLAY_BACKGROUND[index]);
 		SetTextColor(hdcEdit, g_DISPLAY_FOREGROUND[index]);
 
-		HBRUSH hbrBackground = CreateSolidBrush(g_WINDOW_BACKGROUND[index]);
-		SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG)hbrBackground);
-		SendMessage(hwnd, WM_ERASEBKGND, wParam, 0);
-		RedrawWindow(hwnd, NULL, NULL, RDW_ERASE);
-		return (LRESULT)hbrBackground;
+		if (window_color_changed)
+		{
+			window_color_changed = FALSE;
+			HBRUSH hbrBackground = CreateSolidBrush(g_WINDOW_BACKGROUND[index]);
+			SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG)hbrBackground);
+			SendMessage(hwnd, WM_ERASEBKGND, wParam, 0);
+			RedrawWindow(hwnd, NULL, NULL, RDW_ERASE);
+			return (LRESULT)hbrBackground;
+		}
 	}
 	break;
 	case WM_COMMAND:
@@ -291,7 +297,6 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		//if (LOWORD(wParam) == IDC_EDIT_DISPLAY && HIWORD(wParam) == EN_SETFOCUS)
 		SetFocus(hwnd);
-
 
 	}
 	break;
@@ -400,20 +405,25 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CONTEXTMENU:
 	{
 		HMENU hMainMenu = CreatePopupMenu();
-		HMENU hFontMenu = CreatePopupMenu();
-
-		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)hFontMenu, "Fonts");
-		InsertMenu(hFontMenu, 0, MF_BYPOSITION | MF_STRING, IDF_FONT_1, "Digital-7 Mono"); // Font choices in the submenu
-		InsertMenu(hFontMenu, 1, MF_BYPOSITION | MF_STRING, IDF_FONT_2, "Tristan DEMO");
-		InsertMenu(hFontMenu, 1, MF_BYPOSITION | MF_STRING, IDF_FONT_3, "Astronaut");
-
-		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT,			"Exit");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT, "Exit");
 		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE,		"Square Blue");
-		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_METAL_MISTRAL,	"Metal Mistral");		
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square Blue");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_METAL_MISTRAL, "Metal Mistral");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+		HMENU hMenuFonts = CreatePopupMenu();
+		for (INT i = 0; i < 3; i++)
+			InsertMenu(hMenuFonts, i, MF_BYPOSITION | MF_STRING, i + 301, g_sz_FONT[i]);
+		InsertMenu(hMainMenu, 0, MF_POPUP | MF_BYPOSITION, (UINT_PTR)hMenuFonts, "Fonts");
 
-		BOOL item = TrackPopupMenuEx(hMainMenu, TPM_RETURNCMD | TPM_RIGHTALIGN | TPM_BOTTOMALIGN, LOWORD(lParam), 
-			HIWORD(lParam), hwnd, NULL);
+		CheckMenuItem(hMenuFonts, font_index, MF_BYPOSITION | MF_CHECKED);
+		CheckMenuItem(hMainMenu, index + 201, MF_BYCOMMAND | MF_CHECKED);
+
+		BOOL item = TrackPopupMenuEx(hMainMenu, TPM_RETURNCMD | TPM_RIGHTALIGN | TPM_BOTTOMALIGN, LOWORD(lParam), HIWORD(lParam), hwnd, NULL);
+		//TPM_RETURNCMD - возвращает ID_-ресурса выбранного элемента:
+			//CM_EXIT						200
+			//CM_SQUARE_BLUE				201
+			//CM_METAL_MISTRAL				202
+		//BOOL
 
 		switch (item)
 		{
@@ -421,56 +431,33 @@ INT WINAPI WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case CM_SQUARE_BLUE:	SetSkinFromDLL(hwnd, "square_blue");	break;
 		case CM_METAL_MISTRAL:	SetSkinFromDLL(hwnd, "metal_mistral");	break;
 		}
-
-		BOOL FontItem = TrackPopupMenuEx(hFontMenu, TPM_RETURNCMD | TPM_RIGHTALIGN | TPM_BOTTOMALIGN, LOWORD(lParam),
-			HIWORD(lParam), hwnd, NULL);
-
-		switch (FontItem)
-		{
-		case IDF_FONT_1:	SetFont(hwnd, "Digital-7 Mono");	break;
-		case IDF_FONT_2:	SetFont(hwnd, "Tristan DEMO");		break;
-		case IDF_FONT_3:	SetFont(hwnd, "SAstronaut");		break;
-		}
-
-		DestroyMenu(hFontMenu);
 		DestroyMenu(hMainMenu);
-		
+
 		if (item >= 201 && item <= 210)
 		{
-			index = item - CM_SQUARE_BLUE;
+			index = item - CM_EXIT - 1;
 			//SetSkin(hwnd, g_sz_SKIN[index]);
+			SetSkinFromDLL(hwnd, g_sz_SKIN[index]);
 
 			HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
 			HDC hdcEditDisplay = GetDC(hEditDisplay);
+			/////////////////////////////////////////////////////////////////////////////
+			window_color_changed = TRUE;
+			/////////////////////////////////////////////////////////////////////////////
 			SendMessage(hwnd, WM_CTLCOLOREDIT, (WPARAM)hdcEditDisplay, 0);
 			ReleaseDC(hEditDisplay, hdcEditDisplay);	//Контекст устройства обяхательно нужно освобождать
 
 			CHAR sz_buffer[g_SIZE] = {};
-			SendMessage(hwnd, WM_GETTEXT, g_SIZE, (LPARAM)sz_buffer);
-			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)"");
-			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)sz_buffer);
-			SetFocus(hEditDisplay);
-			SetSkinFromDLL(hwnd, g_sz_SKIN[index]);
+			//sprintf(sz_buffer, "%i", item);;;;;;;;;;;;;;;
+			SendMessage(hEditDisplay, WM_GETTEXT, g_SIZE, (LPARAM)sz_buffer);
+			SendMessage(hEditDisplay, WM_SETTEXT, 0, (LPARAM)sz_buffer);
+			//SetFocus(hEditDisplay);
 		}
-
-		if (FontItem >= 301 && FontItem <= 305)
+		if (item >= 301 && item <= 303)
 		{
-			font_index = item - IDF_FONT_1;
-			//SetSkin(hwnd, g_sz_SKIN[index]);
-
-			HWND hEditDisplay = GetDlgItem(hwnd, IDC_EDIT_DISPLAY);
-			HDC hdcEditDisplay = GetDC(hEditDisplay);
-			SendMessage(hwnd, WM_CTLCOLOREDIT, (WPARAM)hdcEditDisplay, 0);
-			//ReleaseDC(hEditDisplay, hdcEditDisplay);	//Контекст устройства обяхательно нужно освобождать
-
-			CHAR sz_buffer[g_SIZE] = {};
-			SendMessage(hwnd, WM_GETTEXT, g_SIZE, (LPARAM)sz_buffer);
-			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)"");
-			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)sz_buffer);
-			SetFocus(hEditDisplay);
-			SetFont(hwnd, g_sz_FONT[index]);
+			font_index = item - 300 - 1;
+			SetFont(hwnd, g_sz_FONT[font_index]);
 		}
-
 	}
 	break;
 
@@ -578,11 +565,53 @@ VOID LoadFontFromDLL(HMODULE hFontModule, INT resourceID)
 
 VOID LoadFontsFromDLL(HMODULE hFontModule)
 {
-	for (int i = 301; i <= 304; i++)
+	for (int i = 301; i < 304; i++)
 	{
 		LoadFontFromDLL(hFontModule, i);
 	}
 }
+
+//VOID SetFont(HWND hEdit, CONST CHAR* font_name)
+//{
+//	HFONT hNewFont = CreateFont
+//	(
+//		16,                       // Height of font
+//		0,                         // Average character width
+//		0,                         // Angle of escapement
+//		0,                         // Base-line orientation angle
+//		FW_NORMAL,                 // Font weight
+//		FALSE,                     // Italic attribute option
+//		FALSE,                     // Underline attribute option
+//		FALSE,                     // Strikeout attribute option
+//		ANSI_CHARSET,              // Character set
+//		OUT_DEFAULT_PRECIS,        // Output precision
+//		CLIP_DEFAULT_PRECIS,       // Clipping precision
+//		ANTIALIASED_QUALITY,       // Output quality
+//		FF_DONTCARE,               // Family and pitch
+//		font_name                    // Font name
+//	);
+//
+//	// Check if the font creation was successful
+//	if (hNewFont) 
+//	{
+//		// Get the old font
+//		HFONT hOldFont = (HFONT)SendMessage(hEdit, WM_GETFONT, 0, 0);
+//
+//		// Set the new font for the Edit control
+//		SendMessage(hEdit, WM_SETFONT, (WPARAM)hNewFont, TRUE);
+//
+//		// Optionally: Delete the old font to prevent memory leaks
+//		if (hOldFont) 
+//		{
+//			DeleteObject(hOldFont);
+//		}
+//	}
+//	else 
+//	{
+//		// Handle the error: Display a message or log the failure.
+//		std::cerr << "Error creating font: " << font_name << std::endl;
+//	}
+//}
 
 VOID SetFont(HWND hwnd, CONST CHAR font_name[])
 {
